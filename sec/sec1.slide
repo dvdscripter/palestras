@@ -1,0 +1,159 @@
+Segurança da Informação
+
+David Valentim Dias
+Desenvolvedor, Impulso
+david.valentim@bol.com.br
+https://dvdscripter.wordpress.com
+
+* Desenvolvimento e Segurança
+
+.image img/furadeira.jpg
+.image img/buraco.jpg
+
+* Open Web Application Security Project (OWASP)
+
+Fundação que reune recursos sobre as falhas  de segurança mais comuns
+
+- Tutoriais
+- Ferramentas (pentest, scripts, ...)
+- Treinamento
+- Fomento científico 
+
+.image img/owasp.png 250 _
+[[https://owasp.org]]
+
+* OWASP TOP 10
+
+- [[https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A1-Injection][Injection]]
+- [[https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A2-Broken_Authentication][Broken Authentication]]
+- [[https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A3-Sensitive_Data_Exposure][Sensitive Data Exposure]]
+- [[https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A4-XML_External_Entities_(XXE)][XML External Entities (XXE)]]
+- [[https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A5-Broken_Access_Control][Broken Access Control]]
+- [[https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A6-Security_Misconfiguration][Security Misconfiguration]]
+- [[https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A7-Cross-Site_Scripting_(XSS)][Cross-Site Scripting (XSS)]]
+- [[https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A8-Insecure_Deserialization][Insecure Deserialization]]
+- [[https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A9-Using_Components_with_Known_Vulnerabilities][Using Components with Known Vulnerabilities]]
+- [[https://owasp.org/www-project-top-ten/OWASP_Top_Ten_2017/Top_10-2017_A10-Insufficient_Logging%252526Monitoring][Insufficient Logging & Monitoring]]
+
+* Injection
+
+Geralmente ocorre com a entrada de dados inesperada
+
+.play -edit injection/main.go /^func \(db \*DB\) GetUserByName/,/^}/
+
+Injection possível com:
+
+    "' or '1'='1"
+
+* Broken Authentication
+
+Falhas no modelo de autenticação do usuário:
+
+- Senhas fracas (admin/admin)
+- Ataques de força bruta
+- Recuperação fraca de senha (Qual o nome do seu cachorro?)
+- Senhas não criptografadas ou cripto. fraca
+- Sessões infinitas
+
+.image img/recaptcha.png 250 _
+
+* Sensitive Data Exposure
+
+Os dados armazenados e em trânsito precisam de alguma proteção?
+
+- Usar criptografia sempre que possível. HTTP(*S*) = 60%
+- Não armazenar dados desnecessários (PCI DSS)
+- Desativar cache em respostas com dados sensíveis
+
+*Problema*
+
+Quando estamos cadastrando um novo funcionário e caso ele exista em outro Org. exibimos o número do cartão que ele possui nas outras Orgs.
+
+*Solução*
+Ocultar parte do número do cartão com *
+
+* XML External Entities (XXE)
+
+- Aplicações que aceitam XML como entrada devem desabilitar/validar DTD (Document Type Definitions)
+- Atualizar os processadores de XML
+- Atualizar SOAP >= 1.2
+
+
+    <!ENTITY xxe SYSTEM "file:///dev/random" >]>
+
+* Broken Access Control
+
+Politicas que forçam o usuário a conseguir agir apenas dentro do seu contexto.
+
+- Modificar a URL usando chaves primárias para ter acesso/edição de outra conta
+- CORS mal configurado
+- Elevação de privilégios
+
+    /api/boleto/:ordem
+
+Sempre verificar se o CNPJ atual pode acessar pedidos que não é dono.
+
+* Security Misconfiguration
+
+- Servidor exibindo informações para desenvolvimento em ambiente de produção
+- Recursos/serviços desnecessários ativos
+- Contas padrões
+- Software desatualizado
+
+*Problema*
+Servidor da intranet exibia erros em modo de depuração.
+*Solução*
+Exibir "Oops, tives um problema!" e logar o erro específico internamente.
+
+* Cross-Site Scripting (XSS)
+
+Inclusão de dados (scripts) não validados no html
+
+[[http://localhost:8080/boleto?numerodoc=123456]]
+
+[[http://localhost:8080/boleto?numerodoc=<script>document.location='http://www.google.com'</script>]]
+
+.play -edit xss/main.go /^func boleto/,/^}/
+
+*Correção*
+
+    t, _ := template.New("").Parse(header + `<p>Número do documento: {{.}}` + footer)
+    t.Execute(w, doc)
+
+* Insecure Deserialization
+
+*Situação*
+
+O cookie de autenticação possui uma estrutura com dados do usuário
+
+ {
+     user: "david.valentim@bol.com.br",
+     pass: "12345678"
+ }
+
+O cookie não foi criptografado e o campo user é verificado em algumas rotinas para dar permissão.
+O atacante modifica o cookie:
+
+ {
+     user: "admin@bol.com.br",
+     pass: "12345678"
+ }
+
+Atacante possui as permissões de um usuário diferente
+
+* Using Components with Known Vulnerabilities
+
+Ocorre principalmente com software que não possuem manutenção ou que não foram atualizados
+
+[[github.com/satori/go.uuid]]
+
+ Affected versions of this package are vulnerable to Insecure Randomness producing predictable UUID identifiers due to the limited number of bytes read when using the g.rand.Read function.
+
+Caso do Drupal e IPT...
+
+* Insufficient Logging & Monitoring
+
+- Falta de log e monitoramento
+- Mensagens de log que não contribuem
+- Alertas em tempo real
+- In 2016, identifying a breach took an average of 191 days – plenty of time for damage to be inflicted.
